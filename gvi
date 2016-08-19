@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# Author:  Mike Pietruszka
+# Date:    Aut 2nd, 2016
+# Summary: git wrapper for vi/vim. Edit, compare, and then check in files.
+#
+
+#export GIT_EDITOR=vi
+
+function commit_file() {
+	# Prompt user before we git add/commit
+	echo "---------------------------------------------"
+	read -p "Commit changes to local git repository (y/n)?" -n 1 -r
+	echo
+	if [[ ! ${REPLY} =~ ^[Yy]$ ]]; then
+		exit 1
+	else
+		git add $@
+		git commit
+	fi
+}
+
+if [ "$1" == "-n" ]; then
+	vim
+elif [[ "$@" != "" ]]; then
+    vim $@
+    diff=$(git diff $@)
+    if [ "${diff}" != "" ]; then
+        git diff $@
+		commit_file
+    fi
+else
+    echo "Please specify filename to edit."
+fi
