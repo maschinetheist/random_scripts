@@ -1,0 +1,121 @@
+Resources:
+# Elastic Load Balancer configuration
+    ec2lb:
+        Type: AWS::ElasticLoadBalancing::LoadBalancer
+        Properties:
+            Subnets:
+                - # List of custom VPC subnets goes in here
+            SecurityGroups:
+                - # Custom VPC SG goes in here
+            Listeners:
+                - LoadBalancerPort: '80'
+                  InstancePort: '80'
+                  Protocol: HTTP
+            HealthCheck:
+                Target: HTTP:80/healthy.html
+                HealthyThreshold: '3'
+                UnhealthyThreshold: '5'
+                Interval: '30'
+                Timeout: '5'
+
+# Auto-Scaling stuff
+    ec2LaunchConfig:
+        Type: AWS::AutoScaling::LaunchConfiguration
+        Properties:
+            ImageId: # Custom AMI
+            SecurityGroups:
+                - # Custom VPC SG goes in here
+            InstanceType: t2.micro
+            UserData: # Base64-encoded UserData script goes in here
+            AssociatePublicIpAddress: true
+
+    ec2AutoScalingGroup:
+        Type: AWS::AutoScaling::AutoScalingGroup
+        Properties:
+            AvailabilityZones:
+                Fn::GetAZs: ''
+            LaunchConfigurationName:
+                Ref: ec2LaunchConfig
+            Cooldown: '60'
+            MinSize: '2'
+            MaxSize: '4'
+            LoadBalancerNames:
+                - Ref: ec2lb
+            VPCZoneIdentifier:
+                - # List of custom VPC subnets goes in here
+
+# Auto-Scaling Group policies
+    ec2ScaleUp:
+        Type: AWS::AutoScaling::ScalingPolicy
+        Properties:
+            AdjustmentType: ChangeInCapacity
+            AutoScalingGroupName:
+                Ref: ec2AutoScalingGroup
+            Cooldown: '1'
+            ScalingAdjustment: '1'
+
+    ec2ScaleDown:
+        Type: AWS::AutoScaling::ScalingPolicy
+        Properties:
+            AdjustmentType: ChangeInCapacity
+            AutoScalingGroupName:
+                Ref: ec2AutoScalingGroup
+            Cooldown: '1'
+            ScalingAdjustment: '-1'
+
+# Alarms for Auto-Scaling Groups
+    CPUAlarmHigh:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            EvaluationPeriods: '1'
+            Statistic: Average
+            Threshold: '60'
+            AlarmDescription: Alarm if CPU too high or metric disappears indicating instance is down
+            Period: '60'
+            AlarmActions:
+                - Ref: ec2ScaleUp
+            Namespace: AWS/EC2
+            Dimensions:
+                - Name: AutoScalingGroupName
+                  Value:
+                      Ref: ec2AutoScalingGroup
+            ComparisonOperator: GreaterThanThreshold
+            MetricName: CPUUtilization
+
+    CPUAlarmLow:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            EvaluationPeriods: '1'
+            Statistic: Average
+            Threshold: '20'
+            AlarmDescription: Alarm if CPU has come down
+            Period: '60'
+            AlarmActions:
+                - Ref: ec2ScaleDown
+            Namespace: AWS/EC2
+            Dimensions:
+                - Name: AutoScalingGroupName
+                  Value:
+                      Ref: ec2AutoScalingGroup
+            ComparisonOperator: LessThanThreshold
+            MetricName: CPUUtilization
+
+# S3 stuff; before deploying, please make sure that bucket names are 
+# original and not globally duplicate
+    ec2bucketlogs:
+        Type: AWS::S3::Bucket
+            BucketName: ec2-bucket-logs
+    ec2bucketpub:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: ec2-bucket-pub
+            LoggingConfiguration:
+                DestinationBucketName: ec2-bucket-logs
+                LogFilePrefix: pub-logs
+            AccessControl: PublicRead
+    ec2bucketwordpress:
+        Type: AWS::S3::Bucket
+            BucketName: ec2-bucket-wordpress
+            LoggingConfiguration:
+                DestinationBucketName: ec2-bucket-logs
+                LogFilePrefix: wordpress-logs

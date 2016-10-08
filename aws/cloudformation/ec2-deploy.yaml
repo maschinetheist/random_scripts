@@ -1,0 +1,13 @@
+Resources:
+    ec2-Ec2Instance:
+        Type: AWS::EC2::Instance
+        Properties:
+            SecurityGroupIds:
+                - # Custom VPC SG goes in here
+            KeyName: ec2_ec2
+            ImageId: # Custom AMI goes in here
+            InstanceType: t2.micro
+            SubnetId: # Custom VPC subnet goes in here
+            UserData: # Base64-encoded User Data script
+            IamInstanceProfile: # IAM profile name
+            AvailabilityZone: us-west-2a
