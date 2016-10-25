@@ -15,20 +15,31 @@ import os
 import tempfile
 import argparse
 import difflib
+import socket
 
 def sftp_op(host, username, password, port, remote_file, local_path):
     ''' Establish ssh connection to pull the remote file locally '''
     hostname = host
 
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname, username=username, password=password, allow_agent=True)
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname, username=username, password=password,
+            allow_agent=True)
 
-    sftp = ssh.open_sftp()
-    sftp.get(remote_file, local_path)
-
-    sftp.close()
-    ssh.close()
+        sftp = ssh.open_sftp()
+        sftp.get(remote_file, local_path)
+    except paramiko.BadHostKeyException:
+        print "SSH Host Key could not be verified"
+    except paramiko.AuthenticationException:
+        print "Authentication failed"
+    except (paramiko.SSHException, socket.gaierror):
+        print "Could not connect to remote host {hostname}".format(
+            hostname=hostname)
+        sys.exit(1)
+    finally:
+        sftp.close()
+        ssh.close()
 
 
 def compare(local_file, local_path, remote_file):
@@ -47,7 +58,8 @@ def compare(local_file, local_path, remote_file):
     local_file_contents = local_file_contents.splitlines()  
     remote_file_contents = remote_file_contents.splitlines()    
 
-    diff = difflib.unified_diff(local_file_contents, remote_file_contents, lineterm='')
+    diff = difflib.unified_diff(local_file_contents, remote_file_contents,
+        lineterm='')
     print '\n'.join(list(diff))
 
 if __name__ == "__main__":

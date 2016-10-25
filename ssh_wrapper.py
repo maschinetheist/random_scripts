@@ -5,7 +5,6 @@
 # Summary: SSH wrapper
 #
 # TODO:
-#   - Add exception handling for auth and connectivity errors
 #
 
 import sys
@@ -13,6 +12,7 @@ import paramiko
 import getpass
 import argparse
 import multiprocessing
+import socket
 
 def ssh_op(host, username, password, port, command):
     '''
@@ -22,12 +22,26 @@ def ssh_op(host, username, password, port, command):
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname, username=username, password=password, allow_agent=True)
 
-    ''' Run some commands '''
-    stdin, stdout, stderr = ssh.exec_command(command)
-    for line in stdout.readlines():
-        print ''.join(line.encode('ascii', 'ignore').split())
+    try:
+        ssh.connect(hostname, username=username, password=password, allow_agent=True)
+
+        ''' Run some commands '''
+        try:
+            stdin, stdout, stderr = ssh.exec_command(command)
+        except paramiko.SSHException:
+            print "Could not execute remote command"
+        finally:
+            for line in stdout.readlines():
+                print ''.join(line.encode('ascii', 'ignore').split())
+    except paramiko.BadHostKeyException:
+        print "SSH Host Key could not be verified"
+    except paramiko.AuthenticationException:
+        print "Authentication failed"
+    except (paramiko.SSHException, socket.gaierror):
+        print "Failed to connect to {hostname}".format(hostname=hostname)
+    finally:
+        ssh.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SSH Wrapper that runs commands against hosts in parallel")
