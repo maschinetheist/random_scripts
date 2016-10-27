@@ -66,8 +66,6 @@ def compare(local_file, local_path, remote_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Diff local files against files on remote hosts")
-    #parser.add_argument('-H', action='store', nargs='+', dest='hosts')
-    #parser.add_argument('-u', action='store', dest='username', help="Username")
     parser.add_argument('-p', '--port', action='store', dest='port', help="SSH port")
     parser.add_argument('-k', action='store_true', dest='pki', help="Use ssh-agent and SSH key authentication")
     parser.add_argument('local_file', nargs=1, help="local file")
