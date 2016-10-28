@@ -24,7 +24,7 @@ def sftp_op(host, username, password, port, remote_file, local_path):
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname, username=username, password=password,
+        ssh.connect(hostname, username=username, password=password, 
             allow_agent=True)
 
         sftp = ssh.open_sftp()
@@ -65,12 +65,15 @@ def compare(local_file, local_path, remote_file):
     print '\n'.join(list(diff))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Diff local files against files on remote hosts")
+    parser = argparse.ArgumentParser(
+        description="Diff local files against files on remote hosts")
     parser.add_argument('-p', '--port', action='store', dest='port', help="SSH port")
-    parser.add_argument('-k', action='store_true', dest='pki', help="Use ssh-agent and SSH key authentication")
+    parser.add_argument('-k', action='store_true', dest='pki', 
+        help="Use ssh-agent and SSH key authentication")
     parser.add_argument('local_file', nargs=1, help="local file")
     parser.add_argument('remote_file', nargs='*', help="[USER@]HOST:file")
-    parser.add_argument('-v', action='version', version='%(prog)s 1.3', help="Prints a version number")
+    parser.add_argument('-v', action='version', version='%(prog)s 1.3', 
+        help="Prints a version number")
     results, extras = parser.parse_known_args()
     results.local_file.extend(extras)
     results.remote_file.extend(extras)
@@ -80,10 +83,10 @@ if __name__ == "__main__":
         sys.exit(0)
     
     if results.pki:
-    # force ssh pubkey auth
+        # force ssh pubkey auth
         password = None
     else:
-    # ask for password
+        # ask for password
         password = getpass.getpass()
 
     if not results.port:
@@ -92,7 +95,6 @@ if __name__ == "__main__":
     for remote_uri in results.remote_file:
         print remote_uri + ":"
 
-    #    for host in results.hosts:
         local_file = ''.join(results.local_file)
         remote_uri = ''.join(remote_uri)
 
@@ -100,7 +102,7 @@ if __name__ == "__main__":
             username = remote_uri.split("@")[0]
             remote_uri = remote_uri.split("@")[1]
         else:
-        # if we didn't supply username in uri, get local username
+            # if we didn't supply username in uri, get local username
             username = getpass.getuser()
         host = remote_uri.split(":")[0]
         remote_file = remote_uri.split(":")[1]
