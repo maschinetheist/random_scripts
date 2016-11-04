@@ -1,0 +1,127 @@
+Parameters:
+    subneta:
+        Type: String
+        Description: "sb_CustomVpc_us-east-1a"
+        MinLength: "9"
+        MaxLength: "18"
+        Default: "10.0.0.0/24"
+    subnetb:
+        Type: String
+        Description: "sb_CustomVpc_us-east-1b"
+        MinLength: "9"
+        MaxLength: "18"
+        Default: "10.0.1.0/24"
+    subnetc:
+        Type: String
+        Description: "sb_CustomVpc_us-east-1c"
+        MinLength: "9"
+        MaxLength: "18"
+        Default: "10.0.2.0/24"
+
+Resources:
+# VPC Config
+    vpcCustomVpc:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: 10.0.0.0/16
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+
+# Subnets within the VPC
+    vpcCustomVpcsubneta:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId:
+                Ref: vpcCustomVpc
+            CidrBlock:
+                Ref: subneta
+            AvailabilityZone: "us-east-1a"
+            MapPublicIpOnLaunch: true
+    vpcCustomVpcsubnetb:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId:
+                Ref: vpcCustomVpc
+            CidrBlock:
+                Ref: subnetb
+            AvailabilityZone: "us-east-1b"
+            MapPublicIpOnLaunch: true
+    vpcCustomVpcsubnetc:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId:
+                Ref: vpcCustomVpc
+            CidrBlock:
+                Ref: subnetc
+            AvailabilityZone: "us-east-1c"
+            MapPublicIpOnLaunch: true
+
+# VPC Gateway
+    igwCustomVpc:
+        Type: AWS::EC2::InternetGateway
+
+    vpcCustomVpcGatewayAttach:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            InternetGatewayId:
+                Ref: igwCustomVpc
+            VpcId:
+                Ref: vpcCustomVpc
+
+# Routing Table stuff
+    rtCustomVpc:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: vpcCustomVpc
+
+    rtCustomVpcAssociationA:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: vpcCustomVpcsubneta
+            RouteTableId:
+                Ref: rtCustomVpc
+
+    rtCustomVpcAssociationB:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: vpcCustomVpcsubnetb
+            RouteTableId:
+                Ref: rtCustomVpc
+
+    rtCustomVpcAssociationC:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: vpcCustomVpcsubnetc
+            RouteTableId:
+                Ref: rtCustomVpc
+
+    vpcCustomVpcRoute:
+        Type: AWS::EC2::Route
+        DependsOn: igwCustomVpc
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId:
+                Ref: igwCustomVpc
+            RouteTableId:
+                Ref: rtCustomVpc
+
+# Create some basic security groups
+    sgwebCustomVpc:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: "Allow SSH and http to the SG"
+            VpcId:
+                Ref: vpcCustomVpc
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: '80'
+                  ToPort: '80'
+                  CidrIp: 0.0.0.0/0
+                - IpProtocol: tcp
+                  FromPort: '22'
+                  ToPort: '22'
+                  CidrIp: # your local public IP
