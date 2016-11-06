@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# TODO:
+#   - need support for overwriting existing templates on S3
+#   - argparse functionality for picking functions
+#   - add a check to see if stack exists prior to uploading the template
 
 from __future__ import print_function
 from boto import (cloudformation, s3, exception)
@@ -50,7 +54,7 @@ class Stacker():
             b = self.conn.get_bucket(self.bucket)
             k = s3.key.Key(b)
             k.key = self.template
-            k.set_contents_from_filename(self.local_template)
+            k.set_contents_from_filename(self.local_template, replace=True)
             #k.close
         except:
             print("Failed uploading the new template to s3")
@@ -58,17 +62,10 @@ class Stacker():
             template_url = "http://s3.amazonaws.com/" + self.bucket + "/" + self.template
         return template_url
 
-    def create_stack(self, stack_name, template):
+    def stack_status(self, stack_name):
         self.stack_name = stack_name
-        self.template = template
-        try:
-            print("Creating a new stack using template: " + self.template)
-            self.cf.create_stack(self.stack_name, template_url=self.template)
-        except exception.BotoServerError as e:
-            print("Failed creating stack using template: " + self.template)
-            print(e)
 
-        print("Getting stack creation status...")
+        print("Getting stack status...")
         while True:
             time.sleep(15)
             try:
@@ -76,11 +73,32 @@ class Stacker():
             finally:
                 self.status.reverse()
                 if "Stack " + self.stack_name + " CREATE_COMPLETE" in str(self.status):
-                    print("Creation of the stack " + self.stack_name + " complete.")
+                    print("Creation of stack " + self.stack_name + " complete.")
                     break
+                elif "Stack " + self.stack_name + "DELETE_IN_PROGRESS" in str(self.status):
+                    print("Deletion of stack " + self.stack_name + " in progress.")
+                    break
+
+    def create_stack(self, stack_name, template):
+        self.stack_name = stack_name
+        self.template = template
+        try:
+            print("Creating a new stack using template: " + self.template)
+            self.cf.create_stack(self.stack_name, template_url=self.template)
+            self.stack_status(self.stack_name)
+        except exception.BotoServerError as e:
+            print("Failed creating stack using template: " + self.template)
+            print(e)
 
     def delete_stack(self, stack_name):
         self.stack_name = stack_name
+        try:
+            print("Deleteing stack " + self.stack_name)
+            self.cf.delete_stack(stack_name_or_id=self.stack_name)
+            self.stack_status(self.stack_name)
+        except exception.BotoServerError as e:
+            print("Failed deleting stack : " + self.template)
+            print(e)
 
 
 if __name__ == "__main__":
