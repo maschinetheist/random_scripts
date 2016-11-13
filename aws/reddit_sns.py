@@ -3,6 +3,8 @@
 # Author:  Mike Pietruszka
 # Date:    Nov 13th, 2016
 # Summary: Monitor subreddits for latest threads and alert on latest submissions
+# TODO:
+# - utilize sqlite3 or text file to hold latest posts that we don't care about
 #
 
 from __future__ import print_function
@@ -12,7 +14,7 @@ from datetime import datetime, timedelta
 from dateutil import tz
 
 sns = boto3.client('sns')
-number = '+18888888'
+number = '+188888888'
 
 from_zone = tz.gettz('UTC')
 to_zone = tz.gettz('America/Chicago')
@@ -29,11 +31,12 @@ for sub in subreddits:
         post_time = datetime.utcfromtimestamp(thread.created_utc).strftime('%Y-%m-%d %H:%M:%S.%f')
         post_time = datetime.strptime(post_time, '%Y-%m-%d %H:%M:%S.%f')
         last_hour = datetime.utcnow() - timedelta(hours=1)
+
         if post_time > last_hour:
             # convert UTC time to local time
             post_time = post_time.replace(tzinfo=from_zone)
             central = post_time.astimezone(to_zone)
-            #print(str(thread) + " " + str(central))
+
             thread_name = thread.fullname.encode('ascii', 'ignore')
             new_threads[thread_name] = {}
             new_threads[thread_name]['id'] = str(thread)
