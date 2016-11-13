@@ -53,7 +53,7 @@ class Stacker():
         :param str self.template            template name without the path
         '''
         self.bucket = 'cf-templates-158gc87u1eu1y-us-east-1'
-        self.local_template = local_template
+        self.local_template = ''.join(local_template)
         self.template = self.local_template.replace('/home/mike/', '')
 
         print("Uploading new template file to s3")
@@ -62,8 +62,7 @@ class Stacker():
             b = self.conn.get_bucket(self.bucket)
             k = s3.key.Key(b)
             k.key = self.template
-            k.set_contents_from_filename(self.local_template, replace=True)
-            #k.close
+            k.set_contents_from_filename(self.local_template, replace=True, reduced_redundancy=True)
         except:
             print("Failed uploading the new template to s3")
         finally:
@@ -143,12 +142,12 @@ if __name__ == "__main__":
         print(stacks)
     elif results.create:
         if results.template_file:
-            template_url = s.upload_(template(results.template_file))
-            stacks = s.create_stack(results.stack_name, template_url)
+            template_url = s.upload_template(results.template_file)
+            stacks = s.create_stack(''.join(results.stack_name), template_url)
         elif results.template_url:
-            stacks = s.create_stack(results.stack_name, template_url)
-    elif results.delete:
-        stacks = s.delete_stack(results.stack_name)
+            stacks = s.create_stack(''.join(results.stack_name), template_url)
+        elif results.delete:
+            stacks = s.delete_stack(results.stack_name)
     else:
         parser.print_help()
 
