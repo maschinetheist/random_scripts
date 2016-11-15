@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Author:  Mike Pietruszka
-# Date:    Aut 2nd, 2016
+# Date:    Aug 2nd, 2016
 # Summary: git wrapper for vi/vim. Edit, compare, and then check in files.
 #
 
