@@ -152,7 +152,7 @@ if __name__ == "__main__":
         parser.print_help()
 
     # upload local file to s3 bucket and then reference the file via s3 web url
-    #template = "https://s3.amazonaws.com/cf-templates-158gc87u1eu1y-us-east-1/ec2_goatherding_us-east.yaml"
-    #template_url = s.upload_template('/home/mike/ec2_goatherding_us-east.yaml')
-    #print(template_url)
-    #s.create_stack("test3", template_url)
+    remote_template = "https://s3.amazonaws.com/cf-templates-158gc87u1eu1y-us-east-1/ec2_goatherding_us-east.yaml"
+    local_template = results.template_file
+    template_url = s.upload_template(local_template)
+    s.create_stack("test3", template_url)
